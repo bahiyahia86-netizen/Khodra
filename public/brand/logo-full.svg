@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 200" fill="none">
+  <defs>
+    <linearGradient id="mL" x1="20" y1="20" x2="110" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4ADE80"/>
+      <stop offset="100%" stop-color="#15803D"/>
+    </linearGradient>
+    <linearGradient id="mR" x1="70" y1="15" x2="160" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#86EFAC"/>
+      <stop offset="100%" stop-color="#166534"/>
+    </linearGradient>
+  </defs>
+  <!-- mark -->
+  <g transform="translate(8,18)">
+    <path d="M30 110c4-42 34-72 64-80-6 38-20 72-50 90-6-3-12-6-14-10z" fill="url(#mL)"/>
+    <path d="M130 110c-4-42-34-72-64-80 6 38 20 72 50 90 6-3 12-6 14-10z" fill="url(#mR)"/>
+    <path d="M42 108c18-22 38-40 52-52" stroke="#ECFDF5" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+    <path d="M118 108c-18-22-38-40-52-52" stroke="#ECFDF5" stroke-width="4" stroke-linecap="round" opacity=".65"/>
+    <circle cx="80" cy="48" r="12" fill="#EF4444"/>
+    <circle cx="76" cy="44" r="3" fill="#FCA5A5" opacity=".8"/>
+    <path d="M72 38c3 1.5 6 1.5 9 0 1.5 2.5 4 4 7 4" stroke="#166534" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <path d="M98 28l12 22c1.2 2.2-1 4.5-3.2 3.4L92 34c-1.2-1.2-.2-3.4 2-3.6l4-2.4z" fill="#F97316"/>
+    <path d="M100 22c1 2.5 2.5 4 2.5 6.5M105 21c0 2.5 1 5 1 6.5M110 23c-1 2-1.5 4-2.5 6" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="58" cy="34" r="9" fill="#22C55E"/>
+    <circle cx="50" cy="40" r="7" fill="#16A34A"/>
+    <circle cx="60" cy="42" r="6.5" fill="#15803D"/>
+  </g>
+  <!-- wordmark -->
+  <text x="190" y="105" font-family="Cairo, Tahoma, Segoe UI, sans-serif" font-size="72" font-weight="800" fill="#14532D" direction="rtl">خضرة</text>
+  <text x="190" y="148" font-family="Cairo, Tahoma, Segoe UI, sans-serif" font-size="22" font-weight="600" fill="#40916C" direction="rtl">إدارة محلك ببساطة</text>
+</svg>

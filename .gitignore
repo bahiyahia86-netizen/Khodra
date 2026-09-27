@@ -1,0 +1,34 @@
+
+!.env.example
+!.vscode/extensions.json
+!backups/.gitkeep
+# Editor
+# Env & data
+# Logs
+# MySQL binaries cache
+# Prisma
+# TypeScript
+**/mysql-binaries/
+*.local
+*.log
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+.idea
+.vscode/*
+backups/*.sql
+backups/*.sqlite
+data/
+dist
+dist-electron
+dist-ssr
+lerna-debug.log*
+logs
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+prisma/*.db
+release
+yarn-debug.log*
+yarn-error.log*
