@@ -1,5 +1,6 @@
 import path from 'node:path'
 import fs from 'node:fs'
+import { spawn } from 'node:child_process'
 import { app } from 'electron'
 import { createConnection, type Connection } from 'mysql2/promise'
 
@@ -63,10 +64,122 @@ export function getEngineMode(): 'mysql' | 'sqlite' | null {
 /**
  * يبدأ MySQL إن أمكن، وإلا يفعّل وضع SQLite المحلي (Offline-first).
  */
+function findPortableMariaDbRoot(): string | null {
+  const candidates = [
+    path.join(process.cwd(), 'mariadb-10.11.7-winx64'),
+    path.join(process.cwd(), 'database', 'mariadb'),
+    path.join(process.cwd(), 'app', 'database', 'mariadb'),
+    path.join(process.cwd(), '..', 'mariadb-10.11.7-winx64'),
+    'E:\\mariadb-10.11.7-winx64',
+    'E:\\mariadb-10.11.7-winx64\\mariadb-10.11.7-winx64',
+  ]
+
+  for (const candidate of candidates) {
+    const resolved = path.resolve(candidate)
+    const serverBin = path.join(resolved, 'bin', 'mysqld.exe')
+    if (fs.existsSync(serverBin)) return resolved
+  }
+
+  return null
+}
+
+async function waitForMariaDb(host: string, port: number, timeoutMs = 60000): Promise<void> {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const conn = await createConnection({ host, port, user: 'root', password: '', connectTimeout: 1500 })
+      await conn.end()
+      return
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
+  }
+
+  throw new Error(`MariaDB على ${host}:${port} لم يصبح جاهزًا خلال ${timeoutMs}ms`)
+}
+
+async function tryPortableMariaDb(): Promise<MySqlConfig> {
+  const root = findPortableMariaDbRoot()
+  if (!root) {
+    throw new Error('portable mariadb not found')
+  }
+
+  const packageRoot = path.dirname(root)
+  const datadir = fs.existsSync(path.join(packageRoot, 'data'))
+    ? path.join(packageRoot, 'data')
+    : path.join(root, 'data')
+  const configPath = path.join(packageRoot, 'my.ini')
+
+  fs.mkdirSync(datadir, { recursive: true })
+
+  if (!fs.existsSync(configPath)) {
+    const ini = [
+      '[mysqld]',
+      `basedir=${root.replace(/\\/g, '/')}`,
+      `datadir=${datadir.replace(/\\/g, '/')}`,
+      'port=3307',
+      'bind-address=127.0.0.1',
+      'skip-networking=0',
+      'character-set-server=utf8mb4',
+      'collation-server=utf8mb4_unicode_ci',
+      '',
+    ].join('\n')
+    fs.writeFileSync(configPath, ini, 'utf8')
+  }
+
+  const configExists = fs.existsSync(path.join(root, 'my.ini'))
+  if (configExists && !fs.existsSync(configPath)) {
+    fs.copyFileSync(path.join(root, 'my.ini'), configPath)
+  }
+
+  const binary = path.join(root, 'bin', 'mysqld.exe')
+  const isRunning = await isPortOpen('127.0.0.1', 3307)
+  if (!isRunning) {
+    const child = spawn(binary, ['--defaults-file=' + configPath, '--console', '--standalone'], {
+      cwd: root,
+      detached: true,
+      windowsHide: true,
+      stdio: 'ignore',
+    })
+    child.unref()
+    await waitForMariaDb('127.0.0.1', 3307)
+  }
+
+  const conn = await createConnection({
+    host: '127.0.0.1',
+    port: 3307,
+    user: 'root',
+    password: '',
+    connectTimeout: 2000,
+  })
+
+  await conn.query('CREATE DATABASE IF NOT EXISTS `khodra` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci')
+  await conn.end()
+
+  dbConfig = {
+    host: '127.0.0.1',
+    port: 3307,
+    user: 'root',
+    password: '',
+    database: 'khodra',
+  }
+  console.log('[MySQL] متصل بـ MariaDB Portable على 127.0.0.1:3307 | db=khodra')
+  return dbConfig
+}
+
+async function isPortOpen(host: string, port: number): Promise<boolean> {
+  try {
+    const conn = await createConnection({ host, port, user: 'root', password: '', connectTimeout: 1000 })
+    await conn.end()
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function startMySqlServer(): Promise<'mysql' | 'sqlite'> {
   if (engineMode) return engineMode
 
-  // Force sqlite for CI / restricted environments
   if (process.env.KHODRA_DB === 'sqlite') {
     engineMode = 'sqlite'
     console.log('[DB] وضع SQLite مفروض عبر KHODRA_DB')
@@ -75,6 +188,14 @@ export async function startMySqlServer(): Promise<'mysql' | 'sqlite'> {
 
   fs.mkdirSync(getDataDirectory(), { recursive: true })
   console.log('[MySQL] محاولة تشغيل خادم MySQL المحلي...')
+
+  try {
+    await tryPortableMariaDb()
+    engineMode = 'mysql'
+    return 'mysql'
+  } catch (err) {
+    console.warn('[MySQL] MariaDB portable غير متاح:', (err as Error).message?.slice(0, 140))
+  }
 
   try {
     const { createDB } = await import('mysql-memory-server')
@@ -111,7 +232,6 @@ export async function startMySqlServer(): Promise<'mysql' | 'sqlite'> {
     console.warn('[MySQL] تعذر التشغيل المدمج:', (err as Error).message?.slice(0, 120))
   }
 
-  // Try system MySQL
   try {
     await tryLocalMySql()
     engineMode = 'mysql'

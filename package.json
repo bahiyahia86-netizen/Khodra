@@ -10,11 +10,12 @@
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:ui\"",
     "dev:ui": "vite",
     "dev:app": "vite",
-    "dev:server": "KHODRA_DB=sqlite node --import tsx scripts/dev-server.ts",
+    "dev:server": "cross-env KHODRA_DB=mysql node --import tsx scripts/dev-server.ts",
+    "dev:mysql": "cross-env KHODRA_DB=mysql node --import tsx scripts/dev-server.ts",
     "dev:full": "concurrently -k \"npm:dev:server\" \"npm:dev:ui\"",
-    "dev:electron": "KHODRA_ELECTRON=1 vite",
+    "dev:electron": "cross-env KHODRA_ELECTRON=1 vite",
     "build": "tsc -b && vite build",
-    "build:electron": "KHODRA_ELECTRON=1 vite build && electron-builder",
+    "build:electron": "cross-env KHODRA_ELECTRON=1 vite build && electron-builder",
     "preview": "vite preview",
     "lint": "oxlint",
     "test:logic": "node --import tsx scripts/smoke-test.ts"
@@ -43,6 +44,7 @@
     "cross-env": "^10.0.0",
     "electron": "^38.1.2",
     "electron-builder": "^26.0.12",
+    "esbuild": "^0.28.2",
     "oxlint": "^1.81.0",
     "tsx": "^4.20.5",
     "typescript": "~5.7.0",
@@ -64,7 +66,17 @@
       "public/icons/**/*",
       "public/brand/**/*",
       "public/favicon.svg",
-      "electron/db/**/*"
+      "electron/db/**/*",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/database",
+        "to": "database",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "win": {
       "target": [
@@ -73,9 +85,19 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "icon": "public/icons/icon.png"
+      "icon": "public/icons/icon.png",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "portable": {
+      "artifactName": "Khodra-Portable-${version}-x64.exe"
     },
     "nsis": {
       "oneClick": false,
@@ -83,7 +105,12 @@
       "installerLanguages": [
         "ar"
       ],
-      "language": "1025"
+      "language": "1025",
+      "installerIcon": "public/icons/icon.png",
+      "installerHeaderIcon": "public/icons/icon.png",
+      "uninstallerIcon": "public/icons/icon.png",
+      "artifactName": "Khodra-Setup-${version}-x64.exe",
+      "include": "build/installer.nsh"
     },
     "linux": {
       "target": [

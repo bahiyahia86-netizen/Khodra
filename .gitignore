@@ -20,6 +20,12 @@
 backups/*.sql
 backups/*.sqlite
 data/
+/aria_log.*
+/aria_log_control
+/ibdata*
+/ib_buffer_pool
+/ib_logfile*
+/my.ini
 dist
 dist-electron
 dist-ssr

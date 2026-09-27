@@ -47,7 +47,7 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(icon ? { icon } : {}),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
