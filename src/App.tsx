@@ -6,6 +6,7 @@ import type { PageId } from './types'
 import { LoginPage } from './pages/LoginPage'
 import { HomePage, arabicDate } from './pages/HomePage'
 import { PosPage } from './pages/PosPage'
+import { SalesInvoicePage } from './pages/SalesInvoicePage'
 import { ProductsPage } from './pages/ProductsPage'
 import { PurchasesPage } from './pages/PurchasesPage'
 import { WastagePage } from './pages/WastagePage'
@@ -112,13 +113,6 @@ function Shell() {
               <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" strokeLinecap="round" />
             </svg>
           </button>
-          <button type="button" className="topbar-icon-btn has-badge" title="تنبيهات">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M10 20a2 2 0 0 0 4 0" strokeLinecap="round" />
-            </svg>
-            <span className="badge-dot">2</span>
-          </button>
           <button type="button" className="topbar-user" onClick={() => void logout()} title="تسجيل الخروج">
             <span className="user-avatar">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -134,6 +128,7 @@ function Shell() {
       <main className={`app-content ${isHome ? 'content-home' : 'content-page'}`}>
         {page === 'home' && <HomePage onNavigate={setPage} />}
         {page === 'pos' && <PosPage onBack={goHome} />}
+        {page === 'invoice' && <SalesInvoicePage onBack={goHome} />}
         {page === 'products' && <ProductsPage onBack={goHome} />}
         {page === 'purchases' && <PurchasesPage onBack={goHome} />}
         {page === 'wastage' && <WastagePage onBack={goHome} />}

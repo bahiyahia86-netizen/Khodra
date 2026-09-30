@@ -229,7 +229,9 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   }),
 }
 
-const SEED_PRODUCTS = [
+// Exact fingerprints for sample products seeded by older releases. Only
+// untouched records without transaction history are eligible for one-time cleanup.
+const LEGACY_SAMPLE_PRODUCTS = [
   { name: 'طماطم', unit: 'KG', purchasePrice: 130, salePrice: 180, stockQty: 35, minStock: 10 },
   { name: 'بطاطا', unit: 'KG', purchasePrice: 90, salePrice: 120, stockQty: 80, minStock: 20 },
   { name: 'بصل', unit: 'KG', purchasePrice: 110, salePrice: 140, stockQty: 40, minStock: 10 },
@@ -244,6 +246,81 @@ const SEED_PRODUCTS = [
   { name: 'عنب', unit: 'KG', purchasePrice: 350, salePrice: 480, stockQty: 18, minStock: 5 },
 ]
 
+const LEGACY_DEMO_CLEANUP_KEY = 'migration_legacy_demo_data_removed_v1'
+
+async function removeLegacyDemoData(): Promise<void> {
+  const marker = await query<RowDataPacket[]>(
+    `SELECT value FROM settings WHERE \`key\` = ?`,
+    [LEGACY_DEMO_CLEANUP_KEY],
+  )
+  if (marker.length) return
+
+  for (const product of LEGACY_SAMPLE_PRODUCTS) {
+    const matches = await query<RowDataPacket[]>(
+      `SELECT p.id,
+              (SELECT COUNT(*) FROM sale_items si WHERE si.product_id = p.id) AS saleCount,
+              (SELECT COUNT(*) FROM purchase_items pi WHERE pi.product_id = p.id) AS purchaseCount,
+              (SELECT COUNT(*) FROM wastage w WHERE w.product_id = p.id) AS wastageCount
+       FROM products p
+       WHERE p.name = ? AND p.unit = ? AND p.purchase_price = ? AND p.sale_price = ?
+         AND p.stock_qty = ? AND p.min_stock = ? AND p.status = 'ACTIVE'
+         AND p.barcode IS NULL AND p.image_path IS NULL`,
+      [
+        product.name,
+        product.unit,
+        product.purchasePrice,
+        product.salePrice,
+        product.stockQty,
+        product.minStock,
+      ],
+    )
+    for (const match of matches) {
+      const hasHistory =
+        Number(match.saleCount) + Number(match.purchaseCount) + Number(match.wastageCount) > 0
+      if (!hasHistory) await execute(`DELETE FROM products WHERE id = ?`, [match.id])
+    }
+  }
+
+  // Remove the old demo cashier only if it has never performed an operation or
+  // generated an audit entry; otherwise keep the existing user/history intact.
+  const demoCashiers = await query<RowDataPacket[]>(
+    `SELECT u.id,
+            (SELECT COUNT(*) FROM sales s WHERE s.user_id = u.id) AS saleCount,
+            (SELECT COUNT(*) FROM purchases p WHERE p.user_id = u.id) AS purchaseCount,
+            (SELECT COUNT(*) FROM expenses e WHERE e.user_id = u.id) AS expenseCount,
+            (SELECT COUNT(*) FROM wastage w WHERE w.user_id = u.id) AS wastageCount,
+            (SELECT COUNT(*) FROM daily_closings d WHERE d.user_id = u.id) AS closingCount,
+            (SELECT COUNT(*) FROM customer_payments cp WHERE cp.user_id = u.id) AS paymentCount,
+            (SELECT COUNT(*) FROM audit_logs a WHERE a.user_id = u.id) AS auditCount
+     FROM users u
+     WHERE u.username = 'cashier' AND u.full_name = 'أمين الصندوق' AND u.role = 'CASHIER'`,
+  )
+  for (const cashier of demoCashiers) {
+    const hasHistory = [
+      cashier.saleCount,
+      cashier.purchaseCount,
+      cashier.expenseCount,
+      cashier.wastageCount,
+      cashier.closingCount,
+      cashier.paymentCount,
+      cashier.auditCount,
+    ].some((count) => Number(count) > 0)
+    if (!hasHistory) await execute(`DELETE FROM users WHERE id = ?`, [cashier.id])
+  }
+
+  if (getEngineKind() === 'sqlite') {
+    await execute(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`, [
+      LEGACY_DEMO_CLEANUP_KEY,
+      'done',
+    ])
+  } else {
+    await execute(`INSERT IGNORE INTO settings (\`key\`, value) VALUES (?, ?)`, [
+      LEGACY_DEMO_CLEANUP_KEY,
+      'done',
+    ])
+  }
+}
+
 async function seedData(): Promise<void> {
   const users = await query<RowDataPacket[]>('SELECT id FROM users LIMIT 1')
   if (users.length === 0) {
@@ -252,12 +329,7 @@ async function seedData(): Promise<void> {
       `INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
       ['admin', hash, 'المدير', 'ADMIN'],
     )
-    const cashHash = await bcrypt.hash('cashier123', 10)
-    await execute(
-      `INSERT INTO users (username, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
-      ['cashier', cashHash, 'أمين الصندوق', 'CASHIER'],
-    )
-    console.log('[DB] مستخدمون افتراضيون: admin/admin123 , cashier/cashier123')
+    console.log('[DB] حساب المدير الأولي جاهز: admin')
   }
 
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
@@ -268,17 +340,7 @@ async function seedData(): Promise<void> {
     }
   }
 
-  const products = await query<RowDataPacket[]>('SELECT id FROM products LIMIT 1')
-  if (products.length === 0) {
-    for (const p of SEED_PRODUCTS) {
-      await execute(
-        `INSERT INTO products (name, unit, purchase_price, sale_price, stock_qty, min_stock, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-        [p.name, p.unit, p.purchasePrice, p.salePrice, p.stockQty, p.minStock],
-      )
-    }
-    console.log('[DB] منتجات تجريبية')
-  }
+  await removeLegacyDemoData()
 }
 
 async function ensureColumn(

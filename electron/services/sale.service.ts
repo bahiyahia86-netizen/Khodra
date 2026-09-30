@@ -78,12 +78,32 @@ export async function completeSale(input: {
     if (!['CASH', 'CARD'].includes(input.paymentMethod)) {
       return { ok: false, error: 'طريقة الدفع غير صالحة' }
     }
+
+    // Merge duplicate product rows before checking stock. This prevents a crafted
+    // invoice from selling more than the available quantity through split lines.
+    const quantitiesByProduct = new Map<number, number>()
     for (const item of input.items) {
-      // !(x > 0) يرفض أيضًا القيم غير الرقمية (NaN/undefined) لا الصفر والسالب فقط
-      if (!item.productId || !(Number(item.quantity) > 0)) {
+      const productId = Number(item.productId)
+      const quantity = Number(item.quantity)
+      if (
+        !Number.isSafeInteger(productId) ||
+        productId <= 0 ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0
+      ) {
         return { ok: false, error: 'كمية غير صالحة' }
       }
+      const combinedQuantity = roundQty((quantitiesByProduct.get(productId) || 0) + quantity)
+      if (combinedQuantity <= 0 || !Number.isFinite(combinedQuantity)) {
+        return { ok: false, error: 'كمية غير صالحة' }
+      }
+      quantitiesByProduct.set(productId, combinedQuantity)
     }
+    const normalizedItems = [...quantitiesByProduct].map(([productId, quantity]) => ({
+      productId,
+      quantity,
+    }))
+
     if (input.amountPaid != null && !Number.isFinite(Number(input.amountPaid))) {
       return { ok: false, error: 'المبلغ المدفوع غير صالح' }
     }
@@ -101,7 +121,7 @@ export async function completeSale(input: {
     }
 
     const saleId = await runTransaction(async (tx) => {
-      const productIds = input.items.map((i) => i.productId)
+      const productIds = normalizedItems.map((i) => i.productId)
       const placeholders = productIds.map(() => '?').join(',')
       const products = await tx.query<RowDataPacket>(
         `SELECT id, name, unit, sale_price AS salePrice, stock_qty AS stockQty, status
@@ -120,7 +140,7 @@ export async function completeSale(input: {
       }[] = []
       let total = 0
 
-      for (const item of input.items) {
+      for (const item of normalizedItems) {
         const product = productMap.get(item.productId)
         if (!product || product.status !== 'ACTIVE') {
           throw new Error(`المنتج #${item.productId} غير موجود أو غير نشط`)

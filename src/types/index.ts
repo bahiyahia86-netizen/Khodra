@@ -36,6 +36,14 @@ export interface CartItem {
   lineTotal: number
 }
 
+export interface CompleteSaleInput {
+  items: { productId: number; quantity: number }[]
+  paymentMethod: PaymentMethod
+  notes?: string
+  customerId?: number | null
+  amountPaid?: number
+}
+
 export interface Sale {
   id: number
   invoiceNumber: string
@@ -179,6 +187,7 @@ export interface ApiResult<T = unknown> {
 export type PageId =
   | 'home'
   | 'pos'
+  | 'invoice'
   | 'products'
   | 'purchases'
   | 'wastage'
