@@ -7,8 +7,8 @@ import { useToast } from '../lib/toast'
 export function LoginPage() {
   const { login } = useAuth()
   const toast = useToast()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('admin123')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -66,11 +66,6 @@ export function LoginPage() {
             {loading ? 'جاري الدخول...' : 'تسجيل الدخول'}
           </Button>
         </form>
-        <div className="login-hint">
-          المدير: admin / admin123
-          <br />
-          الصندوق: cashier / cashier123
-        </div>
       </div>
     </div>
   )
