@@ -79,9 +79,13 @@ export async function completeSale(input: {
       return { ok: false, error: 'طريقة الدفع غير صالحة' }
     }
     for (const item of input.items) {
-      if (!item.productId || item.quantity <= 0) {
+      // !(x > 0) يرفض أيضًا القيم غير الرقمية (NaN/undefined) لا الصفر والسالب فقط
+      if (!item.productId || !(Number(item.quantity) > 0)) {
         return { ok: false, error: 'كمية غير صالحة' }
       }
+    }
+    if (input.amountPaid != null && !Number.isFinite(Number(input.amountPaid))) {
+      return { ok: false, error: 'المبلغ المدفوع غير صالح' }
     }
 
     const customerId = input.customerId && input.customerId > 0 ? input.customerId : null

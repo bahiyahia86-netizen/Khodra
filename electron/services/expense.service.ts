@@ -36,7 +36,9 @@ export async function createExpense(input: {
   try {
     const user = requireUser()
     if (!input.description?.trim()) return { ok: false, error: 'الوصف مطلوب' }
-    if (input.amount <= 0) return { ok: false, error: 'المبلغ غير صالح' }
+    if (!(Number(input.amount) > 0) || !Number.isFinite(Number(input.amount))) {
+      return { ok: false, error: 'المبلغ غير صالح' }
+    }
     if (!input.category?.trim()) return { ok: false, error: 'التصنيف مطلوب' }
 
     const date = input.expenseDate || new Date().toISOString().slice(0, 10)

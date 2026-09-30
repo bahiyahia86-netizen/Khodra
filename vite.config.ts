@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type PluginOption, type UserConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url'
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const enableElectron = process.env.KHODRA_ELECTRON === '1'
 
-export default defineConfig(async () => {
-  const plugins = [react(), tailwindcss()]
+export default defineConfig(async (): Promise<UserConfig> => {
+  const plugins: PluginOption[] = [react(), tailwindcss()]
 
   if (enableElectron) {
     const electron = (await import('vite-plugin-electron/simple')).default
@@ -47,7 +47,7 @@ export default defineConfig(async () => {
           },
         },
         renderer: {},
-      }) as never,
+      }) as unknown as PluginOption,
     )
   }
 

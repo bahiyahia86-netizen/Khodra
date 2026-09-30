@@ -43,10 +43,24 @@ export interface ProductInput {
 
 function validateProduct(input: ProductInput): string | null {
   if (!input.name?.trim()) return 'اسم المنتج مطلوب'
-  if (input.purchasePrice < 0) return 'سعر الشراء غير صالح'
-  if (input.salePrice < 0) return 'سعر البيع غير صالح'
-  if (input.stockQty !== undefined && input.stockQty < 0) return 'الكمية غير صالحة'
-  if (input.minStock !== undefined && input.minStock < 0) return 'الحد الأدنى غير صالح'
+  if (!Number.isFinite(Number(input.purchasePrice)) || Number(input.purchasePrice) < 0) {
+    return 'سعر الشراء غير صالح'
+  }
+  if (!Number.isFinite(Number(input.salePrice)) || Number(input.salePrice) < 0) {
+    return 'سعر البيع غير صالح'
+  }
+  if (
+    input.stockQty !== undefined &&
+    (!Number.isFinite(Number(input.stockQty)) || Number(input.stockQty) < 0)
+  ) {
+    return 'الكمية غير صالحة'
+  }
+  if (
+    input.minStock !== undefined &&
+    (!Number.isFinite(Number(input.minStock)) || Number(input.minStock) < 0)
+  ) {
+    return 'الحد الأدنى غير صالح'
+  }
   if (!['KG', 'PIECE', 'BOX', 'OTHER'].includes(input.unit)) return 'وحدة غير صالحة'
   return null
 }

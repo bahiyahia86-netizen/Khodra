@@ -51,8 +51,13 @@ export async function createPurchase(input: {
     const user = requireUser()
     if (!input.items?.length) return { ok: false, error: 'أضف منتجاً واحداً على الأقل' }
     for (const item of input.items) {
-      if (!item.productId || item.quantity <= 0) return { ok: false, error: 'كمية غير صالحة' }
-      if (item.unitCost < 0) return { ok: false, error: 'تكلفة غير صالحة' }
+      // !(x > 0) يرفض أيضًا NaN/undefined
+      if (!item.productId || !(Number(item.quantity) > 0)) {
+        return { ok: false, error: 'كمية غير صالحة' }
+      }
+      if (!Number.isFinite(Number(item.unitCost)) || Number(item.unitCost) < 0) {
+        return { ok: false, error: 'تكلفة غير صالحة' }
+      }
     }
 
     const purchaseId = await runTransaction(async (tx) => {

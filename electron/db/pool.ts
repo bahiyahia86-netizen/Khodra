@@ -1,4 +1,10 @@
-import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise'
+import type {
+  Pool,
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
+  ExecuteValues,
+} from 'mysql2/promise'
 import mysql from 'mysql2/promise'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -6,6 +12,11 @@ import { getDbConfig, getDataDirectory, type MySqlConfig } from './mysql-manager
 import { openSqlite, type SqliteEngine } from './sqlite-engine'
 
 type EngineKind = 'mysql' | 'sqlite'
+
+/** خدماتنا تمرّر unknown[] — نحوّلها إلى نوع القيم الذي يتوقعه mysql2 */
+function toSqlParams(params?: unknown[]): ExecuteValues[] | undefined {
+  return params as ExecuteValues[] | undefined
+}
 
 let kind: EngineKind = 'mysql'
 let pool: Pool | null = null
@@ -90,7 +101,7 @@ export async function query<T extends RowDataPacket[] = RowDataPacket[]>(
     const rows = sqlite!.query(sql, params)
     return rows as unknown as T
   }
-  const [rows] = await pool!.query<T>(sql, params)
+  const [rows] = await pool!.query<T>(sql, toSqlParams(params))
   return rows
 }
 
@@ -120,53 +131,71 @@ export async function execute(
       changedRows: result.affectedRows,
     } as ResultSetHeader
   }
-  const [result] = await pool!.execute<ResultSetHeader>(sql, params)
+  const [result] = await pool!.execute<ResultSetHeader>(sql, toSqlParams(params))
   return result
 }
 
+/**
+ * Transaction on the SQLite engine.
+ * sql.js is synchronous, so the callback runs in "helpers" style exactly like
+ * runTransaction — this keeps both engines on one unified async API.
+ * (withTransaction below is the legacy API kept for compatibility.)
+ */
 export async function withTransaction<T>(
   fn: (conn: TxConn) => Promise<T>,
 ): Promise<T> {
   if (kind === 'sqlite') {
-    return sqlite!.transaction(() => {
-      const tx: TxConn = {
-        query: async <R extends RowDataPacket[]>(sql: string, params?: unknown[]) => {
-          const rows = sqlite!.query(sql, params || [])
-          return [rows as unknown as R, []] as [R, unknown]
-        },
-        execute: async (sql: string, params?: unknown[]) => {
-          const r = sqlite!.exec(sql, params || [])
-          return [
-            {
-              insertId: r.insertId,
-              affectedRows: r.affectedRows,
-            } as ResultSetHeader,
-            undefined,
-          ]
-        },
+    // sql.js is synchronous: same serialized approach as runTransaction.
+    sqlite!.exec('BEGIN')
+    const tx: TxConn = {
+      query: async <R extends RowDataPacket[] = RowDataPacket[]>(
+        sql: string,
+        params?: unknown[],
+      ) => {
+        const rows = sqlite!.query(sql, params || [])
+        return [rows as unknown as R, undefined]
+      },
+      execute: async (sql: string, params?: unknown[]) => {
+        const r = sqlite!.exec(sql, params || [])
+        return [
+          {
+            insertId: r.insertId,
+            affectedRows: r.affectedRows,
+          } as ResultSetHeader,
+          undefined,
+        ]
+      },
+    }
+    try {
+      const result = await fn(tx)
+      sqlite!.exec('COMMIT')
+      sqlite!.save()
+      return result
+    } catch (err) {
+      try {
+        sqlite!.exec('ROLLBACK')
+      } catch {
+        /* ignore */
       }
-      // fn is async but sqlite transaction is sync — run carefully
-      let result!: T
-      let error: unknown
-      const done = fn(tx).then(
-        (v) => {
-          result = v
-        },
-        (e) => {
-          error = e
-        },
-      )
-      // Spin with Atomics? We can't block. Instead use a different approach:
-      throw new Error('INTERNAL: use withTransactionSync for sqlite path')
-    })
+      throw err
+    }
   }
 
   const conn = await pool!.getConnection()
   try {
     await conn.beginTransaction()
     const tx: TxConn = {
-      query: (sql, params) => conn.query(sql, params),
-      execute: (sql, params) => conn.execute(sql, params),
+      query: async <R extends RowDataPacket[] = RowDataPacket[]>(
+        sql: string,
+        params?: unknown[],
+      ) => {
+        const [rows] = await conn.query(sql, toSqlParams(params))
+        return [rows as R, undefined]
+      },
+      execute: async (sql, params) => {
+        const [result] = await conn.execute<ResultSetHeader>(sql, toSqlParams(params))
+        return [result, undefined]
+      },
     }
     const result = await fn(tx)
     await conn.commit()
@@ -228,11 +257,11 @@ export async function runTransaction<T>(fn: (tx: TxHelpers) => Promise<T>): Prom
     await conn.beginTransaction()
     const helpers: TxHelpers = {
       query: async <R = RowDataPacket>(sql: string, params: unknown[] = []) => {
-        const [rows] = await conn.query(sql, params)
+        const [rows] = await conn.query(sql, toSqlParams(params))
         return rows as R[]
       },
       execute: async (sql: string, params: unknown[] = []) => {
-        const [result] = await conn.execute<ResultSetHeader>(sql, params)
+        const [result] = await conn.execute<ResultSetHeader>(sql, toSqlParams(params))
         return { insertId: result.insertId, affectedRows: result.affectedRows }
       },
     }

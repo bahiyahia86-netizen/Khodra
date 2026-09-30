@@ -35,7 +35,7 @@ export async function createWastage(input: {
 }): Promise<ApiResult<WastageDTO>> {
   try {
     const user = requireUser()
-    if (!input.productId || input.quantity <= 0) {
+    if (!input.productId || !(Number(input.quantity) > 0)) {
       return { ok: false, error: 'بيانات غير صالحة' }
     }
     if (!['DAMAGED', 'ROTTEN', 'TRANSPORT', 'OTHER'].includes(input.reason)) {
