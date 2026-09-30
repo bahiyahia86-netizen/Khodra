@@ -10,7 +10,7 @@
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:ui\"",
     "dev:ui": "vite",
     "dev:app": "vite",
-    "dev:server": "cross-env KHODRA_DB=mysql node --import tsx scripts/dev-server.ts",
+    "dev:server": "node --import tsx scripts/dev-server.ts",
     "dev:mysql": "cross-env KHODRA_DB=mysql node --import tsx scripts/dev-server.ts",
     "dev:full": "concurrently -k \"npm:dev:server\" \"npm:dev:ui\"",
     "dev:electron": "cross-env KHODRA_ELECTRON=1 vite",

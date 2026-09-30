@@ -20,7 +20,9 @@ async function main() {
   const { getBackupsDirectory } = await import('../electron/db/mysql-manager')
 
   console.log('[dev-server] بدء قاعدة البيانات...')
-  process.env.KHODRA_DB = process.env.KHODRA_DB || 'sqlite'
+  // Windows: جرّب MariaDB/MySQL المحلي أولًا · غير ذلك: SQLite فورًا (بدون انتظار)
+  process.env.KHODRA_DB =
+    process.env.KHODRA_DB || (process.platform === 'win32' ? 'mysql' : 'sqlite')
   const mode = await startMySqlServer()
   console.log('[dev-server] المحرك:', mode)
   await initPrisma()
@@ -148,8 +150,31 @@ async function main() {
       return
     }
 
-    res.writeHead(404)
-    res.end('Not found')
+    // صفحة توضيحية: هذا المنفذ للـ API فقط — واجهة البرنامج على منفذ Vite
+    if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(`<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8" />
+<title>خضرة — خادم الـ API</title></head>
+<body style="font-family:system-ui,Segoe UI,Tahoma,sans-serif;padding:32px;line-height:1.9">
+<h1>خضرة — خادم الـ API يعمل ✅</h1>
+<p>هذا المنفذ (<code>${PORT}</code>) مخصص للـ API فقط، وليس لواجهة البرنامج.</p>
+<p>افتح واجهة البرنامج على منفذ Vite: <strong>5173</strong>.</p>
+<ul><li><a href="/health">/health</a> — فحص الجاهزية</li>
+<li><code>POST /api/ipc</code> — قناة الأوامر</li></ul>
+</body></html>`)
+      return
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' })
+    res.end(
+      JSON.stringify({
+        ok: false,
+        error: 'NOT_FOUND',
+        message: 'المسار غير موجود على خادم الـ API',
+        hint: 'واجهة البرنامج تعمل على منفذ Vite (5173)',
+      }),
+    )
   })
 
   const PORT = Number(process.env.API_PORT || 8787)
