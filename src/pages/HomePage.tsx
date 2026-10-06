@@ -11,14 +11,26 @@ const NAV_TOP: {
 }[] = [
   {
     id: 'pos',
-    title: 'البيع',
-    desc: 'إتمام عمليات البيع وإدارة السلة',
+    title: 'البيع السريع',
+    desc: 'نقطة البيع (POS) وإتمام السلة مباشرة',
     tone: 'green',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="28" height="28">
         <circle cx="9" cy="20" r="1.5" fill="currentColor" stroke="none" />
         <circle cx="18" cy="20" r="1.5" fill="currentColor" stroke="none" />
         <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'invoice',
+    title: 'فاتورة بيع',
+    desc: 'اختيار الزبون والمنتجات وإصدار الوصل',
+    tone: 'indigo',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="28" height="28">
+        <path d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" strokeLinejoin="round" />
+        <path d="M14 3v5h5M8 12h8M8 16h8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -206,7 +218,7 @@ export function HomePage({
 
       {/* Nav cards */}
       <div className="home-nav-area">
-        <div className="home-nav-row home-nav-row-4">
+        <div className="home-nav-row home-nav-row-5">
           {NAV_TOP.map((item) => (
             <button
               key={item.id}
@@ -241,14 +253,6 @@ export function HomePage({
           ))}
         </div>
       </div>
-
-      {/* Vegetable hero image */}
-      <img
-        className="home-veggies"
-        src="/images/veggies-hero.png"
-        alt=""
-        draggable={false}
-      />
 
       {/* Bottom dashboard strip */}
       <div className="home-bottom-bar">
@@ -305,7 +309,7 @@ export function HomePage({
           </div>
           <div className="home-recent-list">
             {recent.length === 0 ? (
-              <div className="home-recent-empty">لا مبيعات بعد اليوم</div>
+              <div className="home-recent-empty">لا توجد مبيعات مسجلة بعد</div>
             ) : (
               recent.map((sale) => {
                 const first = sale.items[0]
