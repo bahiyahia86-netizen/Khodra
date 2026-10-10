@@ -23,7 +23,7 @@ export function BrandMark({
   if (variant === 'app' && useImage) {
     return (
       <img
-        src="/icons/icon.png"
+        src={`${import.meta.env.BASE_URL}icons/ChatGPT%20Image%20Oct%206,%202026,%2009_59_38%20AM.png`}
         alt=""
         width={px}
         height={px}

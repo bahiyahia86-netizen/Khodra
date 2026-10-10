@@ -381,73 +381,75 @@ export function PosPage({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className="cart-footer">
-            <button
-              type="button"
-              className="pos-customer-btn"
-              onClick={() => {
-                setCustomerSearch('')
-                setCustomerOpen(true)
-              }}
-            >
-              <span className="muted">الزبون</span>
-              <strong>{customer ? customer.name : 'زبون نقدي'}</strong>
-              <span className="pos-customer-caret">▼</span>
-            </button>
-            {customer && (
+            <div className="cart-footer-controls">
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
-                style={{ width: '100%', marginBottom: 8 }}
+                className="pos-customer-btn"
                 onClick={() => {
-                  setCustomer(null)
-                  setAmountPaid('')
+                  setCustomerSearch('')
+                  setCustomerOpen(true)
                 }}
               >
-                إعادة لزبون نقدي
+                <span className="muted">الزبون</span>
+                <strong>{customer ? customer.name : 'زبون نقدي'}</strong>
+                <span className="pos-customer-caret">▼</span>
               </button>
-            )}
+              {customer && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ width: '100%', marginBottom: 8 }}
+                  onClick={() => {
+                    setCustomer(null)
+                    setAmountPaid('')
+                  }}
+                >
+                  إعادة لزبون نقدي
+                </button>
+              )}
 
-            <div className="cart-total-row">
-              <span className="label">الإجمالي</span>
-              <span className="value">{formatMoney(total)}</span>
-            </div>
-
-            {customer && (
-              <div className="pos-paid-row">
-                <label className="field">
-                  <span className="field-label">المدفوع الآن</span>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={amountPaid === '' ? String(total) : amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
-                  />
-                </label>
-                {balancePreview > 0 && (
-                  <div className="pos-balance-hint">
-                    متبقي على الزبون: <strong>{formatMoney(balancePreview)}</strong>
-                  </div>
-                )}
+              <div className="cart-total-row">
+                <span className="label">الإجمالي</span>
+                <span className="value">{formatMoney(total)}</span>
               </div>
-            )}
 
-            <div className="payment-row">
-              <button
-                type="button"
-                className={`pay-btn ${payment === 'CASH' ? 'active' : ''}`}
-                onClick={() => setPayment('CASH')}
-              >
-                💵 نقداً
-              </button>
-              <button
-                type="button"
-                className={`pay-btn ${payment === 'CARD' ? 'active' : ''}`}
-                onClick={() => setPayment('CARD')}
-              >
-                💳 بطاقة / CCP
-              </button>
+              {customer && (
+                <div className="pos-paid-row">
+                  <label className="field">
+                    <span className="field-label">المدفوع الآن</span>
+                    <input
+                      className="input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={amountPaid === '' ? String(total) : amountPaid}
+                      onChange={(e) => setAmountPaid(e.target.value)}
+                    />
+                  </label>
+                  {balancePreview > 0 && (
+                    <div className="pos-balance-hint">
+                      متبقي على الزبون: <strong>{formatMoney(balancePreview)}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="payment-row">
+                <button
+                  type="button"
+                  className={`pay-btn ${payment === 'CASH' ? 'active' : ''}`}
+                  onClick={() => setPayment('CASH')}
+                >
+                  💵 نقداً
+                </button>
+                <button
+                  type="button"
+                  className={`pay-btn ${payment === 'CARD' ? 'active' : ''}`}
+                  onClick={() => setPayment('CARD')}
+                >
+                  💳 بطاقة / CCP
+                </button>
+              </div>
             </div>
             <Button
               variant="success"

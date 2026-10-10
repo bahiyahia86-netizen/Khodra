@@ -80,6 +80,18 @@ const handlers: Record<string, Handler> = {
   'reports:products': async (_w, from?: string, to?: string) => reports.getProductStats(from, to),
 
   // Settings & Backup
+  'printers:list': async (win) => {
+    if (!win) return { ok: false, error: 'قائمة الطابعات متاحة من تطبيق سطح المكتب فقط' }
+    const printers = await win.webContents.getPrintersAsync()
+    return {
+      ok: true,
+      data: printers.map(({ name, displayName, description }) => ({
+        name,
+        displayName,
+        description,
+      })),
+    }
+  },
   'settings:get': async () => settings.getSettings(),
   'settings:update': async (_w, updates: Record<string, string>) => settings.updateSettings(updates),
   'backup:create': async (win) => settings.createBackup(win),
@@ -87,6 +99,7 @@ const handlers: Record<string, Handler> = {
 
   // Print
   'print:receipt': async (win, saleId: number) => print.printReceipt(saleId, win),
+  'print:invoice': async (win, saleId: number) => print.printInvoice(saleId, win),
   'print:preview': async (_w, saleId: number) => print.getReceiptPreview(saleId),
 
   // Audit

@@ -53,6 +53,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
 
   return {
     plugins,
+    base: enableElectron ? './' : '/',
     server: {
       host: '0.0.0.0',
       port: 5173,

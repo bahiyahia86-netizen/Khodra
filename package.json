@@ -1,7 +1,7 @@
 {
   "name": "khodra",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "برنامج سطح مكتب لإدارة محل خضروات وفواكه",
   "author": "Khodra",
   "main": "dist-electron/main.js",
@@ -10,7 +10,7 @@
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:ui\"",
     "dev:ui": "vite",
     "dev:app": "vite",
-    "dev:server": "node --import tsx scripts/dev-server.ts",
+    "dev:server": "cross-env KHODRA_DB=mysql node --import tsx scripts/dev-server.ts",
     "dev:mysql": "cross-env KHODRA_DB=mysql node --import tsx scripts/dev-server.ts",
     "dev:full": "concurrently -k \"npm:dev:server\" \"npm:dev:ui\"",
     "dev:electron": "cross-env KHODRA_ELECTRON=1 vite",
@@ -94,7 +94,7 @@
           ]
         }
       ],
-      "icon": "public/icons/icon.png",
+      "icon": "public/icons/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
     "portable": {
@@ -107,9 +107,10 @@
         "ar"
       ],
       "language": "1025",
-      "installerIcon": "public/icons/icon.png",
-      "installerHeaderIcon": "public/icons/icon.png",
-      "uninstallerIcon": "public/icons/icon.png",
+      "installerIcon": "public/icons/icon.ico",
+      "installerHeaderIcon": "public/icons/icon.ico",
+      "uninstallerIcon": "public/icons/icon.ico",
+      "createDesktopShortcut": "always",
       "artifactName": "Khodra-Setup-${version}-x64.exe",
       "include": "build/installer.nsh"
     },

@@ -2,7 +2,9 @@ import path from 'node:path'
 
 export const app = {
   getPath: (name: string) => {
-    if (name === 'userData') return path.join(process.cwd(), 'data', 'userData')
+    if (name === 'userData') {
+      return process.env.KHODRA_TEST_USER_DATA || path.join(process.cwd(), 'data', 'userData')
+    }
     return path.join(process.cwd(), 'data')
   },
   getAppPath: () => process.cwd(),

@@ -11,6 +11,12 @@ export interface SessionUser {
   role: UserRole
 }
 
+export interface PrinterOption {
+  name: string
+  displayName: string
+  description: string
+}
+
 export interface Product {
   id: number
   name: string
@@ -34,6 +40,14 @@ export interface CartItem {
   quantity: number
   stockQty: number
   lineTotal: number
+}
+
+export interface CompleteSaleInput {
+  items: { productId: number; quantity: number }[]
+  paymentMethod: PaymentMethod
+  notes?: string
+  customerId?: number | null
+  amountPaid?: number
 }
 
 export interface Sale {
@@ -179,6 +193,7 @@ export interface ApiResult<T = unknown> {
 export type PageId =
   | 'home'
   | 'pos'
+  | 'invoice'
   | 'products'
   | 'purchases'
   | 'wastage'

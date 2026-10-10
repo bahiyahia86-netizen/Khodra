@@ -30,9 +30,9 @@ function getMainWindow(): BrowserWindow | null {
 
 function resolveAppIcon(): string | undefined {
   const candidates = [
-    path.join(process.env.APP_ROOT || '', 'public/icons/icon.png'),
-    path.join(process.cwd(), 'public/icons/icon.png'),
-    path.join(RENDERER_DIST, 'icons/icon.png'),
+    path.join(process.env.APP_ROOT || '', 'public/icons/ChatGPT Image Oct 6, 2026, 09_59_38 AM.png'),
+    path.join(process.cwd(), 'public/icons/ChatGPT Image Oct 6, 2026, 09_59_38 AM.png'),
+    path.join(RENDERER_DIST, 'icons/ChatGPT Image Oct 6, 2026, 09_59_38 AM.png'),
   ]
   for (const p of candidates) {
     if (p && fs.existsSync(p)) return p
@@ -41,8 +41,15 @@ function resolveAppIcon(): string | undefined {
 }
 
 function createWindow(): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+    return
+  }
+
   const icon = resolveAppIcon()
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     width: 1366,
     height: 800,
     minWidth: 1100,
@@ -59,24 +66,26 @@ function createWindow(): void {
       sandbox: false,
     },
   })
+  mainWindow = window
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-    mainWindow?.focus()
+  window.once('ready-to-show', () => {
+    if (window.isDestroyed()) return
+    window.show()
+    window.focus()
   })
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  window.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
   })
 
   if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL)
+    void window.loadURL(VITE_DEV_SERVER_URL)
   } else {
-    mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'))
+    void window.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
 
-  mainWindow.on('closed', () => {
+  window.on('closed', () => {
     mainWindow = null
   })
 }
@@ -116,14 +125,13 @@ async function bootstrap(): Promise<void> {
   })
 }
 
-app.on('second-instance', () => {
-  if (!mainWindow) return
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.show()
-  mainWindow.focus()
-})
+if (gotTheLock) {
+  app.on('second-instance', () => {
+    createWindow()
+  })
 
-app.whenReady().then(bootstrap)
+  app.whenReady().then(bootstrap)
+}
 
 app.on('window-all-closed', async () => {
   globalShortcut.unregisterAll()

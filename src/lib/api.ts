@@ -10,13 +10,6 @@ declare global {
   }
 }
 
-/** In-browser mock store for development without Electron */
-type MockStore = {
-  ready: boolean
-}
-
-const mockState: MockStore = { ready: false }
-
 async function invokeElectron<T>(channel: string, ...args: unknown[]): Promise<ApiResult<T>> {
   if (window.khodra?.invoke) {
     return (await window.khodra.invoke(channel, ...args)) as ApiResult<T>
@@ -64,9 +57,14 @@ export const api = {
   deleteProduct: (id: number) => invokeElectron('products:delete', id),
 
   // Sales
-  completeSale: (input: unknown) =>
+  completeSale: (input: import('../types').CompleteSaleInput) =>
     invokeElectron<import('../types').Sale>('sales:complete', input),
-  listSales: (opts?: unknown) => invokeElectron<import('../types').Sale[]>('sales:list', opts),
+  listSales: (opts?: {
+    from?: string
+    to?: string
+    limit?: number
+    customerId?: number
+  }) => invokeElectron<import('../types').Sale[]>('sales:list', opts),
   getSale: (id: number) => invokeElectron<import('../types').Sale>('sales:get', id),
 
   // Customers
@@ -114,6 +112,7 @@ export const api = {
     invokeElectron<import('../types').ProductStats>('reports:products', from, to),
 
   // Settings
+  listPrinters: () => invokeElectron<import('../types').PrinterOption[]>('printers:list'),
   getSettings: () => invokeElectron<Record<string, string>>('settings:get'),
   updateSettings: (updates: Record<string, string>) =>
     invokeElectron<Record<string, string>>('settings:update', updates),
@@ -122,6 +121,7 @@ export const api = {
 
   // Print
   printReceipt: (saleId: number) => invokeElectron('print:receipt', saleId),
+  printInvoice: (saleId: number) => invokeElectron('print:invoice', saleId),
   receiptPreview: (saleId: number) => invokeElectron('print:preview', saleId),
 
   // Audit
@@ -135,7 +135,6 @@ export const api = {
   },
 
   isElectron: () => !!window.khodra?.invoke,
-  mockReady: () => mockState.ready,
 }
 
 export function unitLabel(unit: string): string {
